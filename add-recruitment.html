@@ -1,0 +1,601 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Add Recruitment</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #F6BD33 0%, #FFFFFF 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        .back-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            background: white;
+            color: #F6BD33;
+            border: 2px solid #F6BD33;
+            padding: 10px 20px;
+            border-radius: 25px;
+            text-decoration: none;
+            font-weight: 600;
+            margin-bottom: 20px;
+            transition: all 0.3s ease;
+        }
+
+        .back-btn:hover {
+            background: linear-gradient(135deg, #F6BD33, #FDB913);
+            color: white;
+            transform: translateX(-5px);
+        }
+
+        .form-container {
+            background: white;
+            border-radius: 15px;
+            padding: 40px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+
+        h1 {
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 2rem;
+        }
+
+        .subtitle {
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 1rem;
+        }
+
+        .form-group {
+            margin-bottom: 25px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: #333;
+            font-weight: 600;
+            font-size: 0.95rem;
+        }
+
+        .required {
+            color: #e74c3c;
+        }
+
+        .form-group input,
+        .form-group select,
+        .form-group textarea {
+            width: 100%;
+            padding: 12px 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 1rem;
+            transition: border-color 0.3s ease;
+            font-family: inherit;
+        }
+
+        .form-group input:focus,
+        .form-group select:focus,
+        .form-group textarea:focus {
+            outline: none;
+            border-color: #F6BD33;
+        }
+
+        .form-group textarea {
+            resize: vertical;
+            min-height: 120px;
+        }
+
+        .form-group small {
+            display: block;
+            margin-top: 5px;
+            color: #666;
+            font-size: 0.85rem;
+        }
+
+        .requirements-section {
+            margin-bottom: 25px;
+        }
+
+        .requirement-item {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+
+        .requirement-item input {
+            flex: 1;
+        }
+
+        .btn-remove {
+            background: #e74c3c;
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background 0.3s ease;
+        }
+
+        .btn-remove:hover {
+            background: #c0392b;
+        }
+
+        .btn-add-requirement {
+            background: white;
+            color: #F6BD33;
+            border: 2px solid #F6BD33;
+            padding: 10px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 0.95rem;
+            transition: all 0.3s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn-add-requirement:hover {
+            background: #F6BD33;
+            color: white;
+        }
+
+        .form-actions {
+            display: flex;
+            gap: 15px;
+            margin-top: 30px;
+        }
+
+        .btn-cancel {
+            flex: 1;
+            background: #6c757d;
+            color: white;
+            border: none;
+            padding: 14px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1rem;
+            font-weight: 600;
+            transition: background 0.3s ease;
+        }
+
+        .btn-cancel:hover {
+            background: #5a6268;
+        }
+
+        .btn-submit {
+            flex: 1;
+            background: linear-gradient(135deg, #F6BD33, #FDB913);
+            color: white;
+            border: none;
+            padding: 14px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1rem;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+
+        .btn-submit:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(246, 189, 51, 0.4);
+        }
+
+        .section-title {
+            color: #F6BD33;
+            font-size: 1.2rem;
+            margin-bottom: 15px;
+            margin-top: 30px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .custom-field-item {
+            background: #f8f9fa;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 15px;
+            position: relative;
+        }
+
+        .custom-field-item .btn-remove {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            padding: 8px 15px;
+            font-size: 0.9rem;
+        }
+
+        .custom-field-row {
+            display: grid;
+            grid-template-columns: 2fr 1fr 1fr;
+            gap: 15px;
+            margin-bottom: 10px;
+        }
+
+        .custom-fields-section {
+            margin-bottom: 20px;
+        }
+
+        .checkbox-group {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-top: 10px;
+        }
+
+        .checkbox-group input[type="checkbox"] {
+            width: auto;
+            margin: 0;
+        }
+
+        .checkbox-group label {
+            margin: 0;
+            font-weight: normal;
+        }
+
+        @media (max-width: 768px) {
+            .form-container {
+                padding: 25px;
+            }
+
+            h1 {
+                font-size: 1.5rem;
+            }
+
+            .form-actions {
+                flex-direction: column;
+            }
+
+            .requirement-item {
+                flex-direction: column;
+            }
+
+            .btn-remove {
+                width: 100%;
+            }
+
+            .custom-field-row {
+                grid-template-columns: 1fr;
+            }
+
+            .custom-field-item .btn-remove {
+                position: static;
+                width: 100%;
+                margin-top: 10px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <a href="recruitments.html" class="back-btn">
+            <i class="fas fa-arrow-left"></i> Back to Recruitments
+        </a>
+
+        <div class="form-container">
+            <h1><i class="fas fa-plus-circle"></i> Add New Recruitment</h1>
+            <p class="subtitle">Fill in the details to create a new recruitment posting</p>
+
+            <form id="addRecruitmentForm">
+                <!-- Basic Information -->
+                <div class="form-group">
+                    <label for="title">Position Title <span class="required">*</span></label>
+                    <input type="text" id="title" name="title" required placeholder="e.g., Web Development Team">
+                </div>
+
+                <div class="form-group">
+                    <label for="club">Club/Organization <span class="required">*</span></label>
+                    <input type="text" id="club" name="club" required placeholder="e.g., Tech Club">
+                </div>
+
+                <div class="form-group">
+                    <label for="type">Recruitment Type <span class="required">*</span></label>
+                    <select id="type" name="type" required>
+                        <option value="">Select Type</option>
+                        <option value="ongoing">Ongoing</option>
+                        <option value="upcoming">Upcoming</option>
+                    </select>
+                </div>
+
+                <div class="form-group" id="deadlineGroup">
+                    <label for="deadline">Application Deadline <span class="required">*</span></label>
+                    <input type="date" id="deadline" name="deadline" required>
+                </div>
+
+                <div class="form-group" id="startDateGroup" style="display: none;">
+                    <label for="startDate">Start Date <span class="required">*</span></label>
+                    <input type="date" id="startDate" name="startDate">
+                </div>
+
+                <div class="form-group">
+                    <label for="description">Description <span class="required">*</span></label>
+                    <textarea id="description" name="description" required placeholder="Describe the role, responsibilities, and what the team does..."></textarea>
+                    <small>Provide a detailed description of the position</small>
+                </div>
+
+                <!-- Requirements Section -->
+                <div class="section-title">
+                    <i class="fas fa-list-check"></i> Requirements
+                </div>
+
+                <div class="requirements-section" id="requirementsSection">
+                    <div class="requirement-item">
+                        <input type="text" name="requirement[]" placeholder="Enter a requirement" required>
+                        <button type="button" class="btn-remove" onclick="removeRequirement(this)">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <button type="button" class="btn-add-requirement" onclick="addRequirement()">
+                    <i class="fas fa-plus"></i> Add Another Requirement
+                </button>
+
+                <!-- Form Fields Section -->
+                <div class="section-title">
+                    <i class="fas fa-wpforms"></i> Application Form Fields
+                </div>
+
+                <div class="form-group">
+                    <label>
+                        <input type="checkbox" name="formField" value="name" checked disabled> Full Name
+                    </label>
+                </div>
+
+                <div class="form-group">
+                    <label>
+                        <input type="checkbox" name="formField" value="enrollment" checked disabled> Enrollment Number
+                    </label>
+                </div>
+
+                <div class="form-group">
+                    <label>
+                        <input type="checkbox" name="formField" value="email" checked disabled> Email Address
+                    </label>
+                </div>
+
+                <div class="form-group">
+                    <label>
+                        <input type="checkbox" name="formField" value="phone" checked> Phone Number
+                    </label>
+                </div>
+
+                <div class="form-group">
+                    <label>
+                        <input type="checkbox" name="formField" value="branch" checked> Branch
+                    </label>
+                </div>
+
+                <div class="form-group">
+                    <label>
+                        <input type="checkbox" name="formField" value="year" checked> Current Year
+                    </label>
+                </div>
+
+                <div class="form-group">
+                    <label>
+                        <input type="checkbox" name="formField" value="portfolio"> Portfolio/GitHub Link
+                    </label>
+                </div>
+
+                <div class="form-group">
+                    <label>
+                        <input type="checkbox" name="formField" value="experience" checked> Experience/Motivation
+                    </label>
+                </div>
+
+                <!-- Custom Fields Section -->
+                <div class="section-title">
+                    <i class="fas fa-plus-square"></i> Custom Form Fields
+                </div>
+
+                <div class="custom-fields-section" id="customFieldsSection">
+                    <!-- Custom fields will be added here -->
+                </div>
+
+                <button type="button" class="btn-add-requirement" onclick="addCustomField()">
+                    <i class="fas fa-plus"></i> Add Custom Field
+                </button>
+
+                <!-- Form Actions -->
+                <div class="form-actions">
+                    <button type="button" class="btn-cancel" onclick="window.location.href='recruitments.html'">
+                        Cancel
+                    </button>
+                    <button type="submit" class="btn-submit">
+                        <i class="fas fa-check-circle"></i> Create Recruitment
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        const typeSelect = document.getElementById('type');
+        const deadlineGroup = document.getElementById('deadlineGroup');
+        const startDateGroup = document.getElementById('startDateGroup');
+        const deadlineInput = document.getElementById('deadline');
+        const startDateInput = document.getElementById('startDate');
+
+        // Toggle between deadline and start date based on type
+        typeSelect.addEventListener('change', function() {
+            if (this.value === 'ongoing') {
+                deadlineGroup.style.display = 'block';
+                startDateGroup.style.display = 'none';
+                deadlineInput.required = true;
+                startDateInput.required = false;
+            } else if (this.value === 'upcoming') {
+                deadlineGroup.style.display = 'none';
+                startDateGroup.style.display = 'block';
+                deadlineInput.required = false;
+                startDateInput.required = true;
+            }
+        });
+
+        let customFieldCounter = 0;
+
+        // Add custom field
+        function addCustomField() {
+            customFieldCounter++;
+            const customFieldsSection = document.getElementById('customFieldsSection');
+            const newField = document.createElement('div');
+            newField.className = 'custom-field-item';
+            newField.innerHTML = `
+                <button type="button" class="btn-remove" onclick="removeCustomField(this)">
+                    <i class="fas fa-trash"></i> Remove
+                </button>
+                <div class="custom-field-row">
+                    <div class="form-group" style="margin-bottom: 0;">
+                        <label>Field Label <span class="required">*</span></label>
+                        <input type="text" name="customFieldLabel[]" placeholder="e.g., Portfolio Link" required>
+                    </div>
+                    <div class="form-group" style="margin-bottom: 0;">
+                        <label>Field Type <span class="required">*</span></label>
+                        <select name="customFieldType[]" required>
+                            <option value="text">Text</option>
+                            <option value="email">Email</option>
+                            <option value="tel">Phone</option>
+                            <option value="url">URL</option>
+                            <option value="number">Number</option>
+                            <option value="date">Date</option>
+                            <option value="textarea">Textarea</option>
+                            <option value="select">Dropdown</option>
+                        </select>
+                    </div>
+                    <div class="form-group" style="margin-bottom: 0;">
+                        <label>&nbsp;</label>
+                        <div class="checkbox-group">
+                            <input type="checkbox" name="customFieldRequired[]" value="${customFieldCounter}" id="required${customFieldCounter}">
+                            <label for="required${customFieldCounter}">Required</label>
+                        </div>
+                    </div>
+                </div>
+                <div class="form-group" style="margin-bottom: 0; margin-top: 10px;">
+                    <label>Options (for dropdown, comma-separated)</label>
+                    <input type="text" name="customFieldOptions[]" placeholder="e.g., Option 1, Option 2, Option 3">
+                    <small>Only needed if field type is "Dropdown"</small>
+                </div>
+            `;
+            customFieldsSection.appendChild(newField);
+        }
+
+        // Remove custom field
+        function removeCustomField(button) {
+            button.closest('.custom-field-item').remove();
+        }
+
+        // Add requirement field
+        function addRequirement() {
+            const requirementsSection = document.getElementById('requirementsSection');
+            const newRequirement = document.createElement('div');
+            newRequirement.className = 'requirement-item';
+            newRequirement.innerHTML = `
+                <input type="text" name="requirement[]" placeholder="Enter a requirement" required>
+                <button type="button" class="btn-remove" onclick="removeRequirement(this)">
+                    <i class="fas fa-trash"></i>
+                </button>
+            `;
+            requirementsSection.appendChild(newRequirement);
+        }
+
+        // Remove requirement field
+        function removeRequirement(button) {
+            const requirementsSection = document.getElementById('requirementsSection');
+            if (requirementsSection.children.length > 1) {
+                button.parentElement.remove();
+            } else {
+                alert('At least one requirement is needed!');
+            }
+        }
+
+        // Handle form submission
+        document.getElementById('addRecruitmentForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+
+            const formData = new FormData(this);
+            const requirements = [];
+            const requirementInputs = document.querySelectorAll('input[name="requirement[]"]');
+            requirementInputs.forEach(input => {
+                if (input.value.trim()) {
+                    requirements.push(input.value.trim());
+                }
+            });
+
+            const formFields = [];
+            const formFieldCheckboxes = document.querySelectorAll('input[name="formField"]:checked');
+            formFieldCheckboxes.forEach(checkbox => {
+                formFields.push(checkbox.value);
+            });
+
+            // Collect custom fields
+            const customFields = [];
+            const customFieldLabels = document.querySelectorAll('input[name="customFieldLabel[]"]');
+            const customFieldTypes = document.querySelectorAll('select[name="customFieldType[]"]');
+            const customFieldOptions = document.querySelectorAll('input[name="customFieldOptions[]"]');
+            const customFieldRequired = document.querySelectorAll('input[name="customFieldRequired[]"]:checked');
+
+            customFieldLabels.forEach((label, index) => {
+                if (label.value.trim()) {
+                    const isRequired = Array.from(customFieldRequired).some(
+                        checkbox => parseInt(checkbox.value) === index + 1
+                    );
+                    
+                    const field = {
+                        label: label.value.trim(),
+                        type: customFieldTypes[index].value,
+                        required: isRequired
+                    };
+
+                    // Add options if it's a dropdown
+                    if (customFieldTypes[index].value === 'select' && customFieldOptions[index].value.trim()) {
+                        field.options = customFieldOptions[index].value.split(',').map(opt => opt.trim());
+                    }
+
+                    customFields.push(field);
+                }
+            });
+
+            const recruitmentData = {
+                title: formData.get('title'),
+                club: formData.get('club'),
+                type: formData.get('type'),
+                deadline: formData.get('deadline'),
+                startDate: formData.get('startDate'),
+                description: formData.get('description'),
+                requirements: requirements,
+                formFields: formFields,
+                customFields: customFields
+            };
+
+            console.log('Recruitment Data:', recruitmentData);
+
+            // Show success message
+            alert('✅ Recruitment created successfully!\n\nNote: This is a demo. In production, this would save to your backend.');
+
+            // Redirect back to recruitments page
+            window.location.href = 'recruitments.html';
+        });
+    </script>
+</body>
+</html>
