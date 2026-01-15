@@ -1,0 +1,140 @@
+const express = require('express');
+const router = express.Router();
+const Club = require('../models/Club');
+const User = require('../models/User');
+
+// Get all clubs with optional filters - only show clubs with active recruitments
+router.get('/', async (req, res) => {
+  try {
+    const { category, isRecruiting, search, showAll } = req.query;
+    
+    // If showAll is true, show all clubs from User records (for dropdowns/filters)
+    // Otherwise, only show clubs with active recruitments from Club collection
+    if (showAll === 'true') {
+      // Get unique club names from club admins
+      const clubAdmins = await User.find({ 
+        role: 'clubadmin',
+        club: { $exists: true, $ne: '' }
+      }).select('club');
+      
+      const uniqueClubNames = [...new Set(clubAdmins.map(admin => admin.club))];
+      const clubs = uniqueClubNames.map(clubName => ({
+        _id: clubName,
+        name: clubName,
+        category: 'Technical Club',
+        isRecruiting: false,
+        description: `Join ${clubName}`,
+        requirements: '',
+        recruitmentDeadline: null
+      }));
+      
+      return res.json(clubs);
+    }
+    
+    // Default: Only fetch clubs that have active recruitments from Club collection
+    let filter = { isRecruiting: true };
+    
+    if (category) filter.category = category;
+    if (search) {
+      filter.$or = [
+        { name: { $regex: search, $options: 'i' } },
+        { description: { $regex: search, $options: 'i' } }
+      ];
+    }
+    
+    const clubs = await Club.find(filter).sort({ name: 1 });
+    res.json(clubs);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// Get single club
+router.get('/:id', async (req, res) => {
+  try {
+    const club = await Club.findById(req.params.id);
+    if (!club) {
+      return res.status(404).json({ message: 'Club not found' });
+    }
+    res.json(club);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// Create club
+router.post('/', async (req, res) => {
+  try {
+    const club = new Club(req.body);
+    const savedClub = await club.save();
+    res.status(201).json(savedClub);
+  } catch (error) {
+    res.status(400).json({ message: error.message });
+  }
+});
+
+// Update club
+router.put('/:id', async (req, res) => {
+  try {
+    const clubIdentifier = req.params.id;
+    let club;
+    
+    // Try to find by ObjectId first, then by name
+    if (clubIdentifier.match(/^[0-9a-fA-F]{24}$/)) {
+      club = await Club.findByIdAndUpdate(
+        clubIdentifier,
+        req.body,
+        { new: true }
+      );
+    } else {
+      // Find by name and update, or create if doesn't exist
+      club = await Club.findOneAndUpdate(
+        { name: clubIdentifier },
+        req.body,
+        { new: true, upsert: true }
+      );
+    }
+    
+    if (!club) {
+      return res.status(404).json({ message: 'Club not found' });
+    }
+    res.json(club);
+  } catch (error) {
+    res.status(400).json({ message: error.message });
+  }
+});
+
+// Delete club (turn off recruitment)
+router.delete('/:id', async (req, res) => {
+  try {
+    const clubIdentifier = req.params.id;
+    let club;
+    
+    // Try to find by ObjectId first, then by name
+    if (clubIdentifier.match(/^[0-9a-fA-F]{24}$/)) {
+      club = await Club.findByIdAndUpdate(
+        clubIdentifier,
+        { isRecruiting: false },
+        { new: true }
+      );
+    } else {
+      // Find by name and set isRecruiting to false
+      club = await Club.findOneAndUpdate(
+        { name: clubIdentifier },
+        { isRecruiting: false },
+        { new: true }
+      );
+    }
+    
+    if (!club) {
+      // If club doesn't exist in Club collection, just return success
+      return res.json({ message: 'Recruitment deleted successfully' });
+    }
+    
+    res.json({ message: 'Recruitment deleted successfully' });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
+module.exports = router;
