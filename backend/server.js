@@ -8,7 +8,7 @@ const app = express();
 // Middleware
 const allowedOrigins = [
   'http://localhost:3000',
-  'https://recruitment-website-iitr.vercel.app/', // Replace with your actual Vercel domain
+  'https://recruitment-website-iitr.vercel.app', // Your Vercel domain (no trailing slash)
   process.env.FRONTEND_URL
 ].filter(Boolean);
 
