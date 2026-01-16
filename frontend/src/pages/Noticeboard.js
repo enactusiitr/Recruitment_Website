@@ -21,7 +21,7 @@ const Noticeboard = () => {
     category: true
   });
 
-  const categories = ['general', 'event', 'recruitment', 'announcement'];
+  const categories = ['General', 'Event', 'Recruitment', 'Announcement'];
 
   useEffect(() => {
     fetchClubs();
