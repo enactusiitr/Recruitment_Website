@@ -97,7 +97,7 @@ The frontend will run on `http://localhost:3000`
 - Search notices by title or content
 
 ### 🚀 Club Recruitment
-- Browse all technical clubs
+- Browse all technical/sports/cultural clubs
 - View club descriptions and requirements
 - Check recruitment status and deadlines
 - Apply to clubs with a simple form
@@ -112,24 +112,24 @@ The frontend will run on `http://localhost:3000`
 
 ### Notices
 - `GET /api/notices` - Get all notices (with optional filters)
-- `GET /api/notices/:id` - Get single notice
+- `GET /api/notices/:<id>` - Get single notice
 - `POST /api/notices` - Create notice
-- `PUT /api/notices/:id` - Update notice
-- `DELETE /api/notices/:id` - Delete notice
+- `PUT /api/notices/:<id>` - Update notice
+- `DELETE /api/notices/:<id>` - Delete notice
 
 ### Clubs
 - `GET /api/clubs` - Get all clubs (with optional filters)
-- `GET /api/clubs/:id` - Get single club
+- `GET /api/clubs/:<id>` - Get single club
 - `POST /api/clubs` - Create club
-- `PUT /api/clubs/:id` - Update club
-- `DELETE /api/clubs/:id` - Delete club
+- `PUT /api/clubs/:<id>` - Update club
+- `DELETE /api/clubs/:<id>` - Delete club
 
 ### Events
 - `GET /api/events` - Get all events (with optional filters)
-- `GET /api/events/:id` - Get single event
+- `GET /api/events/:<id>` - Get single event
 - `POST /api/events` - Create event
-- `PUT /api/events/:id` - Update event
-- `DELETE /api/events/:id` - Delete event
+- `PUT /api/events/:<id>` - Update event
+- `DELETE /api/events/:<id>` - Delete event
 
 ### Applications
 - `GET /api/applications` - Get all applications
