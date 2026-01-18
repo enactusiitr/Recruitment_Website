@@ -47,6 +47,14 @@ const Recruitment = () => {
     });
   };
 
+  const getEndOfDay = (value) => {
+    if (!value) return null;
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return null;
+    date.setHours(23, 59, 59, 999);
+    return date;
+  };
+
   const handleApplyClick = (club) => {
     if (!club.isRecruiting) {
       toast.warning('This club is not currently recruiting');
@@ -92,16 +100,17 @@ const Recruitment = () => {
 
   // Check if deadline has passed by more than 1 day (should be hidden)
   const shouldHideItem = (deadline) => {
-    if (!deadline) return false;
-    const deadlineDate = new Date(deadline);
-    const oneDayAfter = new Date(deadlineDate.getTime() + 24 * 60 * 60 * 1000);
+    const endOfDay = getEndOfDay(deadline);
+    if (!endOfDay) return false;
+    const oneDayAfter = new Date(endOfDay.getTime() + 24 * 60 * 60 * 1000);
     return new Date() > oneDayAfter;
   };
 
   // Check if deadline has passed (show as closed)
   const isDeadlinePassed = (deadline) => {
-    if (!deadline) return false;
-    return new Date(deadline) < new Date();
+    const endOfDay = getEndOfDay(deadline);
+    if (!endOfDay) return false;
+    return new Date() > endOfDay;
   };
 
   const filteredClubs = clubs
@@ -115,8 +124,8 @@ const Recruitment = () => {
     })
     .sort((a, b) => {
       // Sort by deadline (oldest first), items without deadline go to end
-      const dateA = a.recruitmentDeadline ? new Date(a.recruitmentDeadline) : new Date('9999-12-31');
-      const dateB = b.recruitmentDeadline ? new Date(b.recruitmentDeadline) : new Date('9999-12-31');
+      const dateA = getEndOfDay(a.recruitmentDeadline) || new Date('9999-12-31');
+      const dateB = getEndOfDay(b.recruitmentDeadline) || new Date('9999-12-31');
       return dateA - dateB;
     });
 

@@ -2,6 +2,15 @@ const express = require('express');
 const router = express.Router();
 const Event = require('../models/Event');
 
+// Normalize a date-like value to the end of that calendar day (23:59:59.999 local time)
+const toEndOfDay = (value) => {
+  if (!value) return value;
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return value;
+  date.setHours(23, 59, 59, 999);
+  return date;
+};
+
 // Get all events with optional filters
 router.get('/', async (req, res) => {
   try {
@@ -41,7 +50,15 @@ router.get('/:id', async (req, res) => {
 // Create event
 router.post('/', async (req, res) => {
   try {
-    const event = new Event(req.body);
+    const payload = { ...req.body };
+    if (payload.registrationDeadline) {
+      payload.registrationDeadline = toEndOfDay(payload.registrationDeadline);
+    }
+    if (payload.submissionDeadline) {
+      payload.submissionDeadline = toEndOfDay(payload.submissionDeadline);
+    }
+
+    const event = new Event(payload);
     const savedEvent = await event.save();
     res.status(201).json(savedEvent);
   } catch (error) {
@@ -52,9 +69,17 @@ router.post('/', async (req, res) => {
 // Update event
 router.put('/:id', async (req, res) => {
   try {
+    const payload = { ...req.body };
+    if (payload.registrationDeadline) {
+      payload.registrationDeadline = toEndOfDay(payload.registrationDeadline);
+    }
+    if (payload.submissionDeadline) {
+      payload.submissionDeadline = toEndOfDay(payload.submissionDeadline);
+    }
+
     const event = await Event.findByIdAndUpdate(
       req.params.id,
-      req.body,
+      payload,
       { new: true }
     );
     if (!event) {

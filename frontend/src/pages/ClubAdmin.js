@@ -62,6 +62,14 @@ const ClubAdmin = () => {
 
   const categories = ['General', 'Event', 'Recruitment', 'Announcement'];
 
+  const toEndOfDayISO = (value) => {
+    if (!value) return null;
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return null;
+    date.setHours(23, 59, 59, 999);
+    return date.toISOString();
+  };
+
   // Helper to convert to title case
   const toTitleCase = (str) => {
     return str.charAt(0).toUpperCase() + str.slice(1).toLowerCase();
@@ -174,7 +182,7 @@ const ClubAdmin = () => {
         category: 'other',  // Default category
         contactEmail: user.email,  // Use admin's email
         requirements: recruitmentForm.requirements,
-        recruitmentDeadline: recruitmentForm.recruitmentDeadline,
+        recruitmentDeadline: toEndOfDayISO(recruitmentForm.recruitmentDeadline),
         isRecruiting: recruitmentForm.isRecruiting !== false  // Use form value
       };
       
@@ -223,7 +231,9 @@ const ClubAdmin = () => {
     try {
       const data = {
         ...eventForm,
-        clubName: user.club
+        clubName: user.club,
+        registrationDeadline: toEndOfDayISO(eventForm.registrationDeadline),
+        submissionDeadline: toEndOfDayISO(eventForm.submissionDeadline)
       };
       
       if (selectedItem) {

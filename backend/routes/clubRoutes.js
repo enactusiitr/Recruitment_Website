@@ -3,6 +3,15 @@ const router = express.Router();
 const Club = require('../models/Club');
 const User = require('../models/User');
 
+// Normalize a date-like value to the end of that calendar day (23:59:59.999 local time)
+const toEndOfDay = (value) => {
+  if (!value) return value;
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return value;
+  date.setHours(23, 59, 59, 999);
+  return date;
+};
+
 // Get all clubs with optional filters - only show clubs with active recruitments
 router.get('/', async (req, res) => {
   try {
@@ -65,7 +74,12 @@ router.get('/:id', async (req, res) => {
 // Create club
 router.post('/', async (req, res) => {
   try {
-    const club = new Club(req.body);
+    const payload = { ...req.body };
+    if (payload.recruitmentDeadline) {
+      payload.recruitmentDeadline = toEndOfDay(payload.recruitmentDeadline);
+    }
+
+    const club = new Club(payload);
     const savedClub = await club.save();
     res.status(201).json(savedClub);
   } catch (error) {
@@ -77,20 +91,24 @@ router.post('/', async (req, res) => {
 router.put('/:id', async (req, res) => {
   try {
     const clubIdentifier = req.params.id;
+    const payload = { ...req.body };
+    if (payload.recruitmentDeadline) {
+      payload.recruitmentDeadline = toEndOfDay(payload.recruitmentDeadline);
+    }
     let club;
     
     // Try to find by ObjectId first, then by name
     if (clubIdentifier.match(/^[0-9a-fA-F]{24}$/)) {
       club = await Club.findByIdAndUpdate(
         clubIdentifier,
-        req.body,
+        payload,
         { new: true }
       );
     } else {
       // Find by name and update, or create if doesn't exist
       club = await Club.findOneAndUpdate(
         { name: clubIdentifier },
-        req.body,
+        payload,
         { new: true, upsert: true }
       );
     }

@@ -56,16 +56,26 @@ const Events = () => {
     });
   };
 
+  const getEndOfDay = (value) => {
+    if (!value) return null;
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return null;
+    date.setHours(23, 59, 59, 999);
+    return date;
+  };
+
   const isDeadlinePassed = (deadline) => {
-    return new Date(deadline) < new Date();
+    const endOfDay = getEndOfDay(deadline);
+    if (!endOfDay) return false;
+    return new Date() > endOfDay;
   };
 
   // Check if event should be hidden (more than 1 day past latest deadline)
   const shouldHideEvent = (event) => {
     const latestDeadline = event.submissionDeadline || event.registrationDeadline || event.eventDate;
-    if (!latestDeadline) return false;
-    const deadlineDate = new Date(latestDeadline);
-    const oneDayAfter = new Date(deadlineDate.getTime() + 24 * 60 * 60 * 1000);
+    const endOfDay = getEndOfDay(latestDeadline);
+    if (!endOfDay) return false;
+    const oneDayAfter = new Date(endOfDay.getTime() + 24 * 60 * 60 * 1000);
     return new Date() > oneDayAfter;
   };
 
