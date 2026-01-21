@@ -38,6 +38,10 @@ const clubSchema = new mongoose.Schema({
   contactEmail: {
     type: String,
     required: true
+  },
+  googleFormLink: {
+    type: String,
+    default: ''
   }
 }, {
   timestamps: true

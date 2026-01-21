@@ -39,6 +39,14 @@ const eventSchema = new mongoose.Schema({
   },
   rules: {
     type: String
+  },
+  registrationFormLink: {
+    type: String,
+    default: ''
+  },
+  submissionFormLink: {
+    type: String,
+    default: ''
   }
 }, {
   timestamps: true

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { FaCheckCircle, FaTimesCircle, FaTimes, FaChevronDown, FaChevronUp, FaSearch, FaUsers } from 'react-icons/fa';
+import { FaCheckCircle, FaTimesCircle, FaTimes, FaChevronDown, FaChevronUp, FaSearch, FaUsers, FaGoogle } from 'react-icons/fa';
 import { toast } from 'react-toastify';
 import { clubAPI, applicationAPI } from '../services/api';
 
@@ -320,6 +320,18 @@ const Recruitment = () => {
               </div>
 
               <div className="modal-footer">
+                {selectedClub?.googleFormLink && (
+                  <a 
+                    href={selectedClub.googleFormLink} 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="btn btn-link"
+                    style={{ marginRight: 'auto' }}
+                  >
+                    <FaGoogle style={{ marginRight: '8px' }} />
+                    Open Google Form
+                  </a>
+                )}
                 <button type="button" className="btn btn-secondary" onClick={() => setShowModal(false)}>
                   Cancel
                 </button>

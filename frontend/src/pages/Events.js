@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { FaCalendarAlt, FaClock, FaBuilding, FaTrophy, FaTimes, FaExternalLinkAlt, FaChevronDown, FaChevronUp, FaSearch } from 'react-icons/fa';
+import { FaCalendarAlt, FaClock, FaBuilding, FaTrophy, FaTimes, FaExternalLinkAlt, FaChevronDown, FaChevronUp, FaSearch, FaGoogle } from 'react-icons/fa';
 import { toast } from 'react-toastify';
 import { eventAPI, applicationAPI, submissionAPI } from '../services/api';
 
@@ -418,6 +418,18 @@ const Events = () => {
               </div>
 
               <div className="modal-footer">
+                {selectedEvent?.registrationFormLink && (
+                  <a 
+                    href={selectedEvent.registrationFormLink} 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="btn btn-link"
+                    style={{ marginRight: 'auto' }}
+                  >
+                    <FaGoogle style={{ marginRight: '8px' }} />
+                    Open Google Form
+                  </a>
+                )}
                 <button type="button" className="btn btn-secondary" onClick={() => setShowApplyModal(false)}>
                   Cancel
                 </button>
@@ -521,6 +533,18 @@ const Events = () => {
               </div>
 
               <div className="modal-footer">
+                {selectedEvent?.submissionFormLink && (
+                  <a 
+                    href={selectedEvent.submissionFormLink} 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="btn btn-link"
+                    style={{ marginRight: 'auto' }}
+                  >
+                    <FaGoogle style={{ marginRight: '8px' }} />
+                    Open Google Form
+                  </a>
+                )}
                 <button type="button" className="btn btn-secondary" onClick={() => setShowSubmitModal(false)}>
                   Cancel
                 </button>

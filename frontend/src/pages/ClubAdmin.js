@@ -45,6 +45,7 @@ const ClubAdmin = () => {
     description: '',
     requirements: '',
     recruitmentDeadline: '',
+    googleFormLink: '',
     isRecruiting: true
   });
   
@@ -55,6 +56,8 @@ const ClubAdmin = () => {
     eventDate: '',
     registrationDeadline: '',
     submissionDeadline: '',
+    registrationFormLink: '',
+    submissionFormLink: '',
     prizes: '',
     rules: '',
     isActive: true
@@ -80,6 +83,21 @@ const ClubAdmin = () => {
       navigate('/login');
       return;
     }
+    
+    // Debug: Log user info
+    console.log('ClubAdmin - User info:', {
+      name: user.name,
+      email: user.email,
+      club: user.club,
+      role: user.role
+    });
+    
+    // Check if user has email
+    if (!user.email) {
+      console.warn('Warning: User object is missing email. User should re-login.');
+      toast.warning('Please log out and log in again to refresh your session.');
+    }
+    
     loadData();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isAuthenticated, user, activeTab]);
@@ -173,6 +191,13 @@ const ClubAdmin = () => {
   // Recruitment handlers
   const handleRecruitmentSubmit = async (e) => {
     e.preventDefault();
+    
+    // Validate that user has email
+    if (!user || !user.email) {
+      toast.error('User email is required. Please log out and log in again.');
+      return;
+    }
+    
     try {
       // Prepare recruitment data
       const data = {
@@ -183,23 +208,28 @@ const ClubAdmin = () => {
         contactEmail: user.email,  // Use admin's email
         requirements: recruitmentForm.requirements,
         recruitmentDeadline: toEndOfDayISO(recruitmentForm.recruitmentDeadline),
+        googleFormLink: recruitmentForm.googleFormLink || '',
         isRecruiting: recruitmentForm.isRecruiting !== false  // Use form value
       };
+      
+      console.log('Submitting recruitment data:', data);
       
       // If editing an existing recruitment, use selectedItem._id
       if (selectedItem && selectedItem._id) {
         await clubAPI.update(selectedItem._id, data);
         toast.success('Recruitment updated successfully!');
       } else {
-        // Creating new - check if club exists in Club collection
-        const clubsResponse = await clubAPI.getAll({ showAll: true, name: user.club });
+        // Creating new - check if club exists in Club collection (include inactive to find all)
+        const clubsResponse = await clubAPI.getAll({ name: user.club, includeInactive: true });
         const existingClub = clubsResponse.data.find(c => c.name === user.club);
         
-        if (existingClub && existingClub._id && existingClub._id.match(/^[0-9a-fA-F]{24}$/)) {
-          // Club exists in DB, update it
+        if (existingClub && existingClub._id) {
+          // Club exists in DB with actual ObjectId, update it
+          console.log('Updating existing club:', existingClub._id);
           await clubAPI.update(existingClub._id, data);
         } else {
           // Club doesn't exist in DB, create it
+          console.log('Creating new club recruitment');
           await clubAPI.create(data);
         }
         toast.success('Recruitment posted successfully!');
@@ -233,7 +263,9 @@ const ClubAdmin = () => {
         ...eventForm,
         clubName: user.club,
         registrationDeadline: toEndOfDayISO(eventForm.registrationDeadline),
-        submissionDeadline: toEndOfDayISO(eventForm.submissionDeadline)
+        submissionDeadline: toEndOfDayISO(eventForm.submissionDeadline),
+        registrationFormLink: eventForm.registrationFormLink || '',
+        submissionFormLink: eventForm.submissionFormLink || ''
       };
       
       if (selectedItem) {
@@ -503,6 +535,7 @@ const ClubAdmin = () => {
       description: '',
       requirements: '',
       recruitmentDeadline: '',
+      googleFormLink: '',
       isRecruiting: true
     });
     setSelectedItem(null);
@@ -516,6 +549,8 @@ const ClubAdmin = () => {
       eventDate: '',
       registrationDeadline: '',
       submissionDeadline: '',
+      registrationFormLink: '',
+      submissionFormLink: '',
       prizes: '',
       rules: '',
       isActive: true
@@ -541,6 +576,7 @@ const ClubAdmin = () => {
       description: recruitment.description || '',
       requirements: recruitment.requirements || '',
       recruitmentDeadline: recruitment.recruitmentDeadline?.split('T')[0] || '',
+      googleFormLink: recruitment.googleFormLink || '',
       isRecruiting: recruitment.isRecruiting
     });
     setShowRecruitmentModal(true);
@@ -555,6 +591,8 @@ const ClubAdmin = () => {
       eventDate: event.eventDate?.split('T')[0] || '',
       registrationDeadline: event.registrationDeadline?.split('T')[0] || '',
       submissionDeadline: event.submissionDeadline?.split('T')[0] || '',
+      registrationFormLink: event.registrationFormLink || '',
+      submissionFormLink: event.submissionFormLink || '',
       prizes: event.prizes || '',
       rules: event.rules || '',
       isActive: event.isActive
@@ -924,6 +962,15 @@ const ClubAdmin = () => {
                   required
                 />
               </div>
+              <div className="form-group">
+                <label>Google Form Link (Application Form)</label>
+                <input
+                  type="url"
+                  value={recruitmentForm.googleFormLink}
+                  onChange={(e) => setRecruitmentForm({ ...recruitmentForm, googleFormLink: e.target.value })}
+                  placeholder="https://forms.gle/..."
+                />
+              </div>
               <div className="form-row">
                 <div className="form-group">
                   <label>Deadline</label>
@@ -1045,6 +1092,26 @@ const ClubAdmin = () => {
                   placeholder="Event rules and guidelines..."
                   rows={2}
                 />
+              </div>
+              <div className="form-row">
+                <div className="form-group">
+                  <label>Registration Form Link</label>
+                  <input
+                    type="url"
+                    value={eventForm.registrationFormLink}
+                    onChange={(e) => setEventForm({ ...eventForm, registrationFormLink: e.target.value })}
+                    placeholder="https://forms.gle/... (for registration)"
+                  />
+                </div>
+                <div className="form-group">
+                  <label>Submission Form Link</label>
+                  <input
+                    type="url"
+                    value={eventForm.submissionFormLink}
+                    onChange={(e) => setEventForm({ ...eventForm, submissionFormLink: e.target.value })}
+                    placeholder="https://forms.gle/... (for submission)"
+                  />
+                </div>
               </div>
               <div className="form-group">
                 <label>Status</label>

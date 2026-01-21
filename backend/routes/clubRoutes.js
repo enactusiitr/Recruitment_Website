@@ -15,7 +15,7 @@ const toEndOfDay = (value) => {
 // Get all clubs with optional filters - only show clubs with active recruitments
 router.get('/', async (req, res) => {
   try {
-    const { category, isRecruiting, search, showAll } = req.query;
+    const { category, isRecruiting, search, showAll, includeInactive } = req.query;
     
     // If showAll is true, show all clubs from User records (for dropdowns/filters)
     // Otherwise, only show clubs with active recruitments from Club collection
@@ -41,7 +41,12 @@ router.get('/', async (req, res) => {
     }
     
     // Default: Only fetch clubs that have active recruitments from Club collection
-    let filter = { isRecruiting: true };
+    // Unless includeInactive is true, then fetch all clubs
+    let filter = {};
+    
+    if (includeInactive !== 'true') {
+      filter.isRecruiting = true;
+    }
     
     if (category) filter.category = category;
     if (search) {
@@ -75,6 +80,18 @@ router.get('/:id', async (req, res) => {
 router.post('/', async (req, res) => {
   try {
     const payload = { ...req.body };
+    
+    // Validate required fields
+    if (!payload.name) {
+      return res.status(400).json({ message: 'Club name is required' });
+    }
+    if (!payload.description) {
+      return res.status(400).json({ message: 'Club description is required' });
+    }
+    if (!payload.contactEmail) {
+      return res.status(400).json({ message: 'Contact email is required' });
+    }
+    
     if (payload.recruitmentDeadline) {
       payload.recruitmentDeadline = toEndOfDay(payload.recruitmentDeadline);
     }
@@ -83,6 +100,21 @@ router.post('/', async (req, res) => {
     const savedClub = await club.save();
     res.status(201).json(savedClub);
   } catch (error) {
+    console.error('Error creating club:', error);
+    
+    // Handle duplicate key error (E11000)
+    if (error.code === 11000) {
+      const clubName = error.keyValue?.name || 'Unknown';
+      return res.status(400).json({ 
+        message: `Club "${clubName}" already exists. Please update the existing club instead of creating a new one.` 
+      });
+    }
+    
+    // Check for validation errors
+    if (error.name === 'ValidationError') {
+      const errors = Object.values(error.errors).map(err => err.message);
+      return res.status(400).json({ message: errors.join(', ') });
+    }
     res.status(400).json({ message: error.message });
   }
 });
