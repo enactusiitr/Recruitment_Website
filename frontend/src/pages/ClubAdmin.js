@@ -30,8 +30,7 @@ const ClubAdmin = () => {
   const [noticeForm, setNoticeForm] = useState({
     title: '',
     content: '',
-    category: 'General',
-    link: ''
+    category: 'General'
   });
   
   const [recruitmentForm, setRecruitmentForm] = useState({
@@ -325,7 +324,7 @@ const ClubAdmin = () => {
 
   // Form helpers
   const resetNoticeForm = () => {
-    setNoticeForm({ title: '', content: '', category: 'General', link: '' });
+    setNoticeForm({ title: '', content: '', category: 'General' });
     setSelectedItem(null);
   };
 
@@ -367,8 +366,7 @@ const ClubAdmin = () => {
     setNoticeForm({
       title: notice.title,
       content: notice.content,
-      category: notice.category,
-      link: notice.link || ''
+      category: notice.category
     });
     setShowNoticeModal(true);
   };
@@ -488,11 +486,6 @@ const ClubAdmin = () => {
                             <span className={`category-badge cat-${notice.category?.toLowerCase()}`}>{toTitleCase(notice.category || 'general')}</span>
                             <h3>{notice.title}</h3>
                             <span className="date-info"><FaClock /> {formatDate(notice.createdAt)}</span>
-                            {notice.link && (
-                              <div className="link-info">
-                                <FaExternalLinkAlt /> Link: <a href={notice.link} target="_blank" rel="noopener noreferrer">{notice.link}</a>
-                              </div>
-                            )}
                           </div>
                           <div className="item-actions">
                             <button className="action-btn edit-btn" onClick={() => openEditNotice(notice)}>
@@ -677,15 +670,6 @@ const ClubAdmin = () => {
                   placeholder="Notice content..."
                   rows={5}
                   required
-                />
-              </div>
-              <div className="form-group">
-                <label>Link (Optional)</label>
-                <input
-                  type="url"
-                  value={noticeForm.link}
-                  onChange={(e) => setNoticeForm({ ...noticeForm, link: e.target.value })}
-                  placeholder="https://example.com/..."
                 />
               </div>
               <div className="modal-actions">
