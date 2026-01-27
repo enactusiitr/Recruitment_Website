@@ -1,33 +1,50 @@
 import React, { useState, useEffect } from 'react';
-import { FaCalendarAlt, FaClock, FaBuilding, FaTrophy, FaTimes, FaExternalLinkAlt, FaChevronDown, FaChevronUp, FaSearch, FaGoogle } from 'react-icons/fa';
+import { FaCalendarAlt, FaClock, FaBuilding, FaTrophy, FaExternalLinkAlt, FaChevronDown, FaChevronUp, FaSearch } from 'react-icons/fa';
 import { toast } from 'react-toastify';
-import { eventAPI, applicationAPI, submissionAPI } from '../services/api';
+import { eventAPI } from '../services/api';
+
+// Utility function to render content with URLs as hyperlinks and line breaks as bullets
+const renderContentWithLinksAndBullets = (content) => {
+  if (!content) return null;
+  
+  // Split by line breaks
+  const paragraphs = content.split(/\n+/).filter(p => p.trim());
+  
+  // URL regex pattern
+  const urlRegex = /(https?:\/\/[^\s]+)/g;
+  
+  const processText = (text) => {
+    const parts = text.split(urlRegex);
+    return parts.map((part, index) => {
+      if (urlRegex.test(part)) {
+        return (
+          <a key={index} href={part} target="_blank" rel="noopener noreferrer" className="inline-link">
+            {part}
+          </a>
+        );
+      }
+      return part;
+    });
+  };
+  
+  if (paragraphs.length === 1) {
+    return <p>{processText(paragraphs[0])}</p>;
+  }
+  
+  return (
+    <ul className="content-bullets">
+      {paragraphs.map((paragraph, index) => (
+        <li key={index}>{processText(paragraph)}</li>
+      ))}
+    </ul>
+  );
+};
 
 const Events = () => {
   const [events, setEvents] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [showApplyModal, setShowApplyModal] = useState(false);
-  const [showSubmitModal, setShowSubmitModal] = useState(false);
-  const [selectedEvent, setSelectedEvent] = useState(null);
   const [expandedId, setExpandedId] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
-  const [driveLink, setDriveLink] = useState('');
-  const [formData, setFormData] = useState({
-    studentName: '',
-    email: '',
-    whatsappNo: '',
-    branch: '',
-    year: '',
-    enrollmentNo: '',
-    message: ''
-  });
-  const [submitFormData, setSubmitFormData] = useState({
-    studentName: '',
-    email: '',
-    enrollmentNo: '',
-    year: '',
-    branch: ''
-  });
 
   useEffect(() => {
     fetchEvents();
@@ -91,8 +108,12 @@ const Events = () => {
       toast.warning('Registration deadline has passed');
       return;
     }
-    setSelectedEvent(event);
-    setShowApplyModal(true);
+    // Redirect to admin-provided registration form link if available
+    if (event.registrationFormLink) {
+      window.open(event.registrationFormLink, '_blank', 'noopener,noreferrer');
+      return;
+    }
+    toast.info('No external registration form provided for this event');
   };
 
   const handleSubmitClick = (event) => {
@@ -100,86 +121,12 @@ const Events = () => {
       toast.warning('Submission deadline has passed');
       return;
     }
-    setSelectedEvent(event);
-    setShowSubmitModal(true);
-  };
-
-  const handleInputChange = (e) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
-  };
-
-  const handleApplySubmit = async (e) => {
-    e.preventDefault();
-    
-    try {
-      const applicationData = {
-        ...formData,
-        type: 'event',
-        referenceId: selectedEvent._id
-      };
-
-      await applicationAPI.create(applicationData);
-      toast.success(`Successfully registered for ${selectedEvent.name}!`);
-      setShowApplyModal(false);
-      setFormData({
-        studentName: '',
-        email: '',
-        phone: '',
-        branch: '',
-        year: '',
-        rollNumber: '',
-        message: ''
-      });
-    } catch (error) {
-      console.error('Error submitting application:', error);
-      toast.success(`Successfully registered for ${selectedEvent.name}!`); // Show success for demo
-      setShowApplyModal(false);
-    }
-  };
-
-  const handleDriveLinkSubmit = async (e) => {
-    e.preventDefault();
-    
-    // Validate cloud storage link
-    if (!driveLink.trim()) {
-      toast.error('Please enter a valid cloud storage link');
+    // Redirect to admin-provided submission form link if available
+    if (event.submissionFormLink) {
+      window.open(event.submissionFormLink, '_blank', 'noopener,noreferrer');
       return;
     }
-
-    // Validate required fields
-    if (!submitFormData.studentName || !submitFormData.email || !submitFormData.enrollmentNo || 
-        !submitFormData.year || !submitFormData.branch) {
-      toast.error('Please fill all required fields');
-      return;
-    }
-
-    try {
-      const submissionData = {
-        eventId: selectedEvent._id,
-        studentName: submitFormData.studentName,
-        email: submitFormData.email,
-        enrollmentNo: submitFormData.enrollmentNo,
-        year: submitFormData.year,
-        branch: submitFormData.branch,
-        driveLink: driveLink.trim()
-      };
-
-      await submissionAPI.create(submissionData);
-      toast.success(`Submission successful for ${selectedEvent.name}!`);
-      setShowSubmitModal(false);
-      setDriveLink('');
-      setSubmitFormData({
-        studentName: '',
-        email: '',
-        enrollmentNo: '',
-        year: '',
-        branch: ''
-      });
-    } catch (error) {
-      console.error('Error submitting:', error);
-      toast.error(error.response?.data?.message || 'Failed to submit. Please try again.');
-    }
+    toast.info('No external submission form provided for this event');
   };
 
   const filteredEvents = events
@@ -241,10 +188,10 @@ const Events = () => {
                   <div className="card-body">
                     <div className="problem-statement">
                       <h4>Problem Statement</h4>
-                      <p>{event.problemStatement}</p>
+                      {renderContentWithLinksAndBullets(event.problemStatement)}
                     </div>
 
-                    <p className="card-content">{event.description}</p>
+                    <div className="card-content">{renderContentWithLinksAndBullets(event.description)}</div>
 
                     {event.prizes && (
                       <div className="prizes-section">
@@ -255,7 +202,8 @@ const Events = () => {
 
                     {event.rules && (
                       <div className="rules-section">
-                        <strong>Rules:</strong> {event.rules}
+                        <strong>Rules:</strong>
+                        {renderContentWithLinksAndBullets(event.rules)}
                       </div>
                     )}
 
@@ -314,249 +262,9 @@ const Events = () => {
         </div>
       )}
 
-      {/* Apply Modal */}
-      {showApplyModal && (
-        <div className="modal-overlay" onClick={() => setShowApplyModal(false)}>
-          <div className="modal" onClick={(e) => e.stopPropagation()}>
-            <div className="modal-header">
-              <h2>Register for {selectedEvent?.name}</h2>
-              <button className="modal-close" onClick={() => setShowApplyModal(false)}>
-                <FaTimes />
-              </button>
-            </div>
+      {/* External registration flow: users are redirected to admin-provided registration form links. */}
 
-            <form onSubmit={handleApplySubmit}>
-              <div className="modal-body">
-                <div className="form-group">
-                  <label>Full Name *</label>
-                  <input
-                    type="text"
-                    name="studentName"
-                    value={formData.studentName}
-                    onChange={handleInputChange}
-                    required
-                    placeholder="Enter your full name"
-                  />
-                </div>
-
-                <div className="form-row">
-                  <div className="form-group">
-                    <label>Email *</label>
-                    <input
-                      type="email"
-                      name="email"
-                      value={formData.email}
-                      onChange={handleInputChange}
-                      required
-                      placeholder="your@email.com"
-                    />
-                  </div>
-                  <div className="form-group">
-                    <label>WhatsApp No. *</label>
-                    <input
-                      type="tel"
-                      name="whatsappNo"
-                      value={formData.whatsappNo}
-                      onChange={handleInputChange}
-                      required
-                      placeholder="10-digit WhatsApp number"
-                    />
-                  </div>
-                </div>
-
-                <div className="form-row">
-                  <div className="form-group">
-                    <label>Branch *</label>
-                    <input
-                      type="text"
-                      name="branch"
-                      value={formData.branch}
-                      onChange={handleInputChange}
-                      required
-                      placeholder="e.g., CSE, ECE, ME..."
-                    />
-                  </div>
-                  <div className="form-group">
-                    <label>Year *</label>
-                    <select
-                      name="year"
-                      value={formData.year}
-                      onChange={handleInputChange}
-                      required
-                    >
-                      <option value="">Select Year</option>
-                      <option value="1">1st Year</option>
-                      <option value="2">2nd Year</option>
-                      <option value="3">3rd Year</option>
-                      <option value="4">4th Year</option>
-                    </select>
-                  </div>
-                </div>
-
-                <div className="form-group">
-                  <label>Enrollment No. *</label>
-                  <input
-                    type="text"
-                    name="enrollmentNo"
-                    value={formData.enrollmentNo}
-                    onChange={handleInputChange}
-                    required
-                    placeholder="Enter your enrollment number"
-                  />
-                </div>
-
-                <div className="form-group">
-                  <label>Team Members / Additional Info (Optional)</label>
-                  <textarea
-                    name="message"
-                    value={formData.message}
-                    onChange={handleInputChange}
-                    placeholder="List team members or any additional information..."
-                    rows="3"
-                  />
-                </div>
-              </div>
-
-              <div className="modal-footer">
-                {selectedEvent?.registrationFormLink && (
-                  <a 
-                    href={selectedEvent.registrationFormLink} 
-                    target="_blank" 
-                    rel="noopener noreferrer"
-                    className="btn btn-link"
-                    style={{ marginRight: 'auto' }}
-                  >
-                    <FaGoogle style={{ marginRight: '8px' }} />
-                    Open Google Form
-                  </a>
-                )}
-                <button type="button" className="btn btn-secondary" onClick={() => setShowApplyModal(false)}>
-                  Cancel
-                </button>
-                <button type="submit" className="btn btn-primary">
-                  Register
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-
-      {/* Submit Modal */}
-      {showSubmitModal && (
-        <div className="modal-overlay" onClick={() => setShowSubmitModal(false)}>
-          <div className="modal" onClick={(e) => e.stopPropagation()}>
-            <div className="modal-header">
-              <h2>Submit for {selectedEvent?.name}</h2>
-              <button className="modal-close" onClick={() => setShowSubmitModal(false)}>
-                <FaTimes />
-              </button>
-            </div>
-
-            <form onSubmit={handleDriveLinkSubmit}>
-              <div className="modal-body">
-                <div className="submission-info">
-                  <p>Upload your project files to Drive and share the link below.</p>
-                  <p>Make sure the link has <strong>"Anyone with the link can view"</strong> access.</p>
-                </div>
-
-                <div className="form-group">
-                  <label>Full Name *</label>
-                  <input
-                    type="text"
-                    value={submitFormData.studentName}
-                    onChange={(e) => setSubmitFormData({ ...submitFormData, studentName: e.target.value })}
-                    required
-                    placeholder="Enter your full name"
-                  />
-                </div>
-
-                <div className="form-row">
-                  <div className="form-group">
-                    <label>Email *</label>
-                    <input
-                      type="email"
-                      value={submitFormData.email}
-                      onChange={(e) => setSubmitFormData({ ...submitFormData, email: e.target.value })}
-                      required
-                      placeholder="your@email.com"
-                    />
-                  </div>
-                  <div className="form-group">
-                    <label>Enrollment No. *</label>
-                    <input
-                      type="text"
-                      value={submitFormData.enrollmentNo}
-                      onChange={(e) => setSubmitFormData({ ...submitFormData, enrollmentNo: e.target.value })}
-                      required
-                      placeholder="Your enrollment number"
-                    />
-                  </div>
-                </div>
-
-                <div className="form-group">
-                  <label>Year *</label>
-                  <select
-                    value={submitFormData.year}
-                    onChange={(e) => setSubmitFormData({ ...submitFormData, year: e.target.value })}
-                    required
-                  >
-                    <option value="">Select Year</option>
-                    <option value="1">1st Year</option>
-                    <option value="2">2nd Year</option>
-                    <option value="3">3rd Year</option>
-                    <option value="4">4th Year</option>
-                  </select>
-                </div>
-
-                <div className="form-group">
-                  <label>Branch *</label>
-                  <input
-                    type="text"
-                    value={submitFormData.branch}
-                    onChange={(e) => setSubmitFormData({ ...submitFormData, branch: e.target.value })}
-                    required
-                    placeholder="Enter your branch (e.g., CSE, ECE, ME)"
-                  />
-                </div>
-
-                <div className="form-group">
-                  <label>Drive Link *</label>
-                  <input
-                    type="url"
-                    value={driveLink}
-                    onChange={(e) => setDriveLink(e.target.value)}
-                    required
-                    placeholder="https://drive.google.com/... or any cloud storage link"
-                  />
-                </div>
-              </div>
-
-              <div className="modal-footer">
-                {selectedEvent?.submissionFormLink && (
-                  <a 
-                    href={selectedEvent.submissionFormLink} 
-                    target="_blank" 
-                    rel="noopener noreferrer"
-                    className="btn btn-link"
-                    style={{ marginRight: 'auto' }}
-                  >
-                    <FaGoogle style={{ marginRight: '8px' }} />
-                    Open Google Form
-                  </a>
-                )}
-                <button type="button" className="btn btn-secondary" onClick={() => setShowSubmitModal(false)}>
-                  Cancel
-                </button>
-                <button type="submit" className="btn btn-success">
-                  <FaExternalLinkAlt />
-                  Submit Project
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
+      {/* External submission flow: users are redirected to admin-provided submission form links. */}
     </div>
   );
 };

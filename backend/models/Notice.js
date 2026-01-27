@@ -47,6 +47,10 @@ const noticeSchema = new mongoose.Schema({
   isActive: {
     type: Boolean,
     default: true
+  },
+  link: {
+    type: String,
+    default: ''
   }
 }, {
   timestamps: true

@@ -1,24 +1,50 @@
 import React, { useState, useEffect } from 'react';
-import { FaCheckCircle, FaTimesCircle, FaTimes, FaChevronDown, FaChevronUp, FaSearch, FaUsers, FaGoogle } from 'react-icons/fa';
+import { FaCheckCircle, FaTimesCircle, FaChevronDown, FaChevronUp, FaSearch, FaUsers } from 'react-icons/fa';
 import { toast } from 'react-toastify';
-import { clubAPI, applicationAPI } from '../services/api';
+import { clubAPI } from '../services/api';
+
+// Utility function to render content with URLs as hyperlinks and line breaks as bullets
+const renderContentWithLinksAndBullets = (content) => {
+  if (!content) return null;
+  
+  // Split by line breaks
+  const paragraphs = content.split(/\n+/).filter(p => p.trim());
+  
+  // URL regex pattern
+  const urlRegex = /(https?:\/\/[^\s]+)/g;
+  
+  const processText = (text) => {
+    const parts = text.split(urlRegex);
+    return parts.map((part, index) => {
+      if (urlRegex.test(part)) {
+        return (
+          <a key={index} href={part} target="_blank" rel="noopener noreferrer" className="inline-link">
+            {part}
+          </a>
+        );
+      }
+      return part;
+    });
+  };
+  
+  if (paragraphs.length === 1) {
+    return <p>{processText(paragraphs[0])}</p>;
+  }
+  
+  return (
+    <ul className="content-bullets">
+      {paragraphs.map((paragraph, index) => (
+        <li key={index}>{processText(paragraph)}</li>
+      ))}
+    </ul>
+  );
+};
 
 const Recruitment = () => {
   const [clubs, setClubs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [expandedId, setExpandedId] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
-  const [showModal, setShowModal] = useState(false);
-  const [selectedClub, setSelectedClub] = useState(null);
-  const [formData, setFormData] = useState({
-    studentName: '',
-    email: '',
-    whatsappNo: '',
-    branch: '',
-    year: '',
-    enrollmentNo: '',
-    message: ''
-  });
 
   useEffect(() => {
     fetchClubs();
@@ -60,43 +86,15 @@ const Recruitment = () => {
       toast.warning('This club is not currently recruiting');
       return;
     }
-    setSelectedClub(club);
-    setShowModal(true);
-  };
-
-  const handleInputChange = (e) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
-  };
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    
-    try {
-      const applicationData = {
-        ...formData,
-        type: 'club',
-        referenceId: selectedClub._id
-      };
-
-      await applicationAPI.create(applicationData);
-      toast.success(`Successfully applied to ${selectedClub.name}!`);
-      setShowModal(false);
-      setFormData({
-        studentName: '',
-        email: '',
-        phone: '',
-        branch: '',
-        year: '',
-        rollNumber: '',
-        message: ''
-      });
-    } catch (error) {
-      console.error('Error submitting application:', error);
-      toast.success(`Successfully applied to ${selectedClub.name}!`); // Show success for demo
-      setShowModal(false);
+    // Redirect to admin-provided form link if available
+    if (club.googleFormLink) {
+      window.open(club.googleFormLink, '_blank', 'noopener,noreferrer');
+      return;
     }
+    toast.info('No external application form provided for this recruitment');
   };
+
+  // No in-site application submission anymore; users are redirected to external form links.
 
   // Check if deadline has passed by more than 1 day (should be hidden)
   const shouldHideItem = (deadline) => {
@@ -170,14 +168,12 @@ const Recruitment = () => {
 
                   {expanded && (
                     <div className="card-body">
-                      <p className="card-content">{club.description}</p>
+                      <div className="card-content">{renderContentWithLinksAndBullets(club.description)}</div>
 
                       {club.requirements && (
                         <div className="requirements-section">
                           <strong>Requirements:</strong>
-                          <ul className="requirements-list">
-                            <li>{club.requirements}</li>
-                          </ul>
+                          {renderContentWithLinksAndBullets(club.requirements)}
                         </div>
                       )}
 
@@ -217,132 +213,7 @@ const Recruitment = () => {
       )}
 
       {/* Application Modal */}
-      {showModal && (
-        <div className="modal-overlay" onClick={() => setShowModal(false)}>
-          <div className="modal" onClick={(e) => e.stopPropagation()}>
-            <div className="modal-header">
-              <h2>Apply to {selectedClub?.name}</h2>
-              <button className="modal-close" onClick={() => setShowModal(false)}>
-                <FaTimes />
-              </button>
-            </div>
-
-            <form onSubmit={handleSubmit}>
-              <div className="modal-body">
-                <div className="form-group">
-                  <label>Full Name *</label>
-                  <input
-                    type="text"
-                    name="studentName"
-                    value={formData.studentName}
-                    onChange={handleInputChange}
-                    required
-                    placeholder="Enter your full name"
-                  />
-                </div>
-
-                <div className="form-row">
-                  <div className="form-group">
-                    <label>Email *</label>
-                    <input
-                      type="email"
-                      name="email"
-                      value={formData.email}
-                      onChange={handleInputChange}
-                      required
-                      placeholder="your@email.com"
-                    />
-                  </div>
-                  <div className="form-group">
-                    <label>WhatsApp No. *</label>
-                    <input
-                      type="tel"
-                      name="whatsappNo"
-                      value={formData.whatsappNo}
-                      onChange={handleInputChange}
-                      required
-                      placeholder="10-digit WhatsApp number"
-                    />
-                  </div>
-                </div>
-
-                <div className="form-row">
-                  <div className="form-group">
-                    <label>Branch *</label>
-                    <input
-                      type="text"
-                      name="branch"
-                      value={formData.branch}
-                      onChange={handleInputChange}
-                      required
-                      placeholder="e.g., CSE, ECE, ME..."
-                    />
-                  </div>
-                  <div className="form-group">
-                    <label>Year *</label>
-                    <select
-                      name="year"
-                      value={formData.year}
-                      onChange={handleInputChange}
-                      required
-                    >
-                      <option value="">Select Year</option>
-                      <option value="1">1st Year</option>
-                      <option value="2">2nd Year</option>
-                      <option value="3">3rd Year</option>
-                      <option value="4">4th Year</option>
-                    </select>
-                  </div>
-                </div>
-
-                <div className="form-group">
-                  <label>Enrollment No. *</label>
-                  <input
-                    type="text"
-                    name="enrollmentNo"
-                    value={formData.enrollmentNo}
-                    onChange={handleInputChange}
-                    required
-                    placeholder="Enter your enrollment number"
-                  />
-                </div>
-
-                <div className="form-group">
-                  <label>Why do you want to join? (Optional)</label>
-                  <textarea
-                    name="message"
-                    value={formData.message}
-                    onChange={handleInputChange}
-                    placeholder="Tell us about yourself and why you're interested..."
-                    rows="3"
-                  />
-                </div>
-              </div>
-
-              <div className="modal-footer">
-                {selectedClub?.googleFormLink && (
-                  <a 
-                    href={selectedClub.googleFormLink} 
-                    target="_blank" 
-                    rel="noopener noreferrer"
-                    className="btn btn-link"
-                    style={{ marginRight: 'auto' }}
-                  >
-                    <FaGoogle style={{ marginRight: '8px' }} />
-                    Open Google Form
-                  </a>
-                )}
-                <button type="button" className="btn btn-secondary" onClick={() => setShowModal(false)}>
-                  Cancel
-                </button>
-                <button type="submit" className="btn btn-primary">
-                  Submit Application
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
+      {/* External application flow: users are redirected to admin-provided form links. */}
     </div>
   );
 };

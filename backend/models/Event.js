@@ -48,6 +48,15 @@ const eventSchema = new mongoose.Schema({
     type: String,
     default: ''
   }
+  ,
+  registrationResponseLink: {
+    type: String,
+    default: ''
+  },
+  submissionResponseLink: {
+    type: String,
+    default: ''
+  }
 }, {
   timestamps: true
 });

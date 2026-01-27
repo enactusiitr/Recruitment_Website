@@ -4,6 +4,43 @@ import { noticeAPI, clubAPI } from '../services/api';
 
 const NOTICES_PER_PAGE = 6;
 
+// Utility function to render content with URLs as hyperlinks and line breaks as bullets
+const renderContentWithLinksAndBullets = (content) => {
+  if (!content) return null;
+  
+  // Split by line breaks
+  const paragraphs = content.split(/\n+/).filter(p => p.trim());
+  
+  // URL regex pattern
+  const urlRegex = /(https?:\/\/[^\s]+)/g;
+  
+  const processText = (text) => {
+    const parts = text.split(urlRegex);
+    return parts.map((part, index) => {
+      if (urlRegex.test(part)) {
+        return (
+          <a key={index} href={part} target="_blank" rel="noopener noreferrer" className="inline-link">
+            {part}
+          </a>
+        );
+      }
+      return part;
+    });
+  };
+  
+  if (paragraphs.length === 1) {
+    return <p>{processText(paragraphs[0])}</p>;
+  }
+  
+  return (
+    <ul className="content-bullets">
+      {paragraphs.map((paragraph, index) => (
+        <li key={index}>{processText(paragraph)}</li>
+      ))}
+    </ul>
+  );
+};
+
 const Noticeboard = () => {
   const [notices, setNotices] = useState([]);
   const [clubs, setClubs] = useState([]);
@@ -350,7 +387,7 @@ const Noticeboard = () => {
 
               <div className="modal-content-section">
                 <h4>Details</h4>
-                <p>{selectedNotice.content}</p>
+                {renderContentWithLinksAndBullets(selectedNotice.content)}
               </div>
             </div>
 

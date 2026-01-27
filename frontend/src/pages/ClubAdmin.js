@@ -1,13 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { 
   FaBullhorn, FaUsers, FaCalendarAlt, FaPlus, FaTimes, FaEye, FaEdit, FaTrash,
-  FaClipboardList, FaClock, FaFileExcel, FaGoogle
+  FaClipboardList, FaClock, FaExternalLinkAlt
 } from 'react-icons/fa';
 import { toast } from 'react-toastify';
 import { useNavigate } from 'react-router-dom';
-import { noticeAPI, clubAPI, eventAPI, applicationAPI, submissionAPI } from '../services/api';
+import { noticeAPI, clubAPI, eventAPI } from '../services/api';
 import { useAuth } from '../context/AuthContext';
-import * as XLSX from 'xlsx';
 
 const ClubAdmin = () => {
   const { user, isAuthenticated } = useAuth();
@@ -20,23 +19,19 @@ const ClubAdmin = () => {
   const [notices, setNotices] = useState([]);
   const [recruitments, setRecruitments] = useState([]);
   const [events, setEvents] = useState([]);
-  const [applications, setApplications] = useState([]);
-  const [submissions, setSubmissions] = useState([]);
   
   // Modal states
   const [showNoticeModal, setShowNoticeModal] = useState(false);
   const [showRecruitmentModal, setShowRecruitmentModal] = useState(false);
   const [showEventModal, setShowEventModal] = useState(false);
-  const [showResponsesModal, setShowResponsesModal] = useState(false);
-  const [showSubmissionsModal, setShowSubmissionsModal] = useState(false);
   const [selectedItem, setSelectedItem] = useState(null);
-  const [responseType, setResponseType] = useState('');
   
   // Form states
   const [noticeForm, setNoticeForm] = useState({
     title: '',
     content: '',
-    category: 'General'
+    category: 'General',
+    link: ''
   });
   
   const [recruitmentForm, setRecruitmentForm] = useState({
@@ -46,7 +41,8 @@ const ClubAdmin = () => {
     requirements: '',
     recruitmentDeadline: '',
     googleFormLink: '',
-    isRecruiting: true
+    isRecruiting: true,
+    responseLink: ''
   });
   
   const [eventForm, setEventForm] = useState({
@@ -58,6 +54,8 @@ const ClubAdmin = () => {
     submissionDeadline: '',
     registrationFormLink: '',
     submissionFormLink: '',
+    registrationResponseLink: '',
+    submissionResponseLink: '',
     prizes: '',
     rules: '',
     isActive: true
@@ -121,28 +119,6 @@ const ClubAdmin = () => {
         // Filter to only show events created by this club
         const filteredEvents = res.data.filter(e => e.clubName === user.club);
         setEvents(filteredEvents);
-      } else if (activeTab === 'responses') {
-        // Load all data to filter applications by club's items
-        const [appsRes, clubsRes, eventsRes] = await Promise.all([
-          applicationAPI.getAll(),
-          clubAPI.getAll({ name: user.club }),
-          eventAPI.getAll({ clubName: user.club })
-        ]);
-        
-        // Get IDs of club's recruitments and events
-        const clubRecruitmentIds = clubsRes.data
-          .filter(r => r.name === user.club)
-          .map(r => r._id);
-        const clubEventIds = eventsRes.data
-          .filter(e => e.clubName === user.club)
-          .map(e => e._id);
-        
-        // Filter applications to only show those for this club's items
-        const filteredApps = appsRes.data.filter(app => 
-          (app.type === 'club' && clubRecruitmentIds.includes(app.referenceId)) ||
-          (app.type === 'event' && clubEventIds.includes(app.referenceId))
-        );
-        setApplications(filteredApps);
       }
     } catch (error) {
       console.error('Error loading data:', error);
@@ -209,7 +185,8 @@ const ClubAdmin = () => {
         requirements: recruitmentForm.requirements,
         recruitmentDeadline: toEndOfDayISO(recruitmentForm.recruitmentDeadline),
         googleFormLink: recruitmentForm.googleFormLink || '',
-        isRecruiting: recruitmentForm.isRecruiting !== false  // Use form value
+        isRecruiting: recruitmentForm.isRecruiting !== false,  // Use form value
+        responseLink: recruitmentForm.responseLink || ''
       };
       
       console.log('Submitting recruitment data:', data);
@@ -265,7 +242,9 @@ const ClubAdmin = () => {
         registrationDeadline: toEndOfDayISO(eventForm.registrationDeadline),
         submissionDeadline: toEndOfDayISO(eventForm.submissionDeadline),
         registrationFormLink: eventForm.registrationFormLink || '',
-        submissionFormLink: eventForm.submissionFormLink || ''
+        submissionFormLink: eventForm.submissionFormLink || '',
+        registrationResponseLink: eventForm.registrationResponseLink || '',
+        submissionResponseLink: eventForm.submissionResponseLink || ''
       };
       
       if (selectedItem) {
@@ -297,234 +276,56 @@ const ClubAdmin = () => {
   };
 
   // Response handlers
-  const viewResponses = async (item, type) => {
-    setSelectedItem(item);
-    setResponseType(type);
-    setShowResponsesModal(true);
-    
-    // Fetch latest applications when opening the modal
+  const viewResponses = (item, type) => {
+    // Open admin-provided response sheet link instead of showing modal
     try {
-      const [appsRes, clubsRes, eventsRes] = await Promise.all([
-        applicationAPI.getAll(),
-        clubAPI.getAll({ name: user.club }),
-        eventAPI.getAll({ clubName: user.club })
-      ]);
-      
-      // Get IDs of club's recruitments and events
-      const clubRecruitmentIds = clubsRes.data
-        .filter(r => r.name === user.club)
-        .map(r => r._id);
-      const clubEventIds = eventsRes.data
-        .filter(e => e.clubName === user.club)
-        .map(e => e._id);
-      
-      // Filter applications to only show those for this club's items
-      const filteredApps = appsRes.data.filter(app => 
-        (app.type === 'club' && clubRecruitmentIds.includes(app.referenceId)) ||
-        (app.type === 'event' && clubEventIds.includes(app.referenceId))
-      );
-      setApplications(filteredApps);
+      if (type === 'club') {
+        if (item.responseLink) {
+          window.open(item.responseLink, '_blank', 'noopener,noreferrer');
+          return;
+        }
+        if (item.googleFormLink) {
+          window.open(item.googleFormLink, '_blank', 'noopener,noreferrer');
+          return;
+        }
+      } else if (type === 'event') {
+        if (item.registrationResponseLink) {
+          window.open(item.registrationResponseLink, '_blank', 'noopener,noreferrer');
+          return;
+        }
+        if (item.registrationFormLink) {
+          window.open(item.registrationFormLink, '_blank', 'noopener,noreferrer');
+          return;
+        }
+      }
+      toast.info('No response sheet or form link provided for this item');
     } catch (error) {
-      console.error('Error fetching latest applications:', error);
+      console.error('Error opening response link:', error);
+      toast.error('Failed to open response link');
     }
   };
 
-  const viewSubmissions = async (event) => {
-    setSelectedItem(event);
-    setShowSubmissionsModal(true);
-    
-    // Fetch latest submissions for this event
+  const viewSubmissions = (event) => {
+    // Open admin-provided submission response sheet link instead of showing modal
     try {
-      const response = await submissionAPI.getByEventId(event._id);
-      setSubmissions(response.data);
+      if (event.submissionResponseLink) {
+        window.open(event.submissionResponseLink, '_blank', 'noopener,noreferrer');
+        return;
+      }
+      if (event.submissionFormLink) {
+        window.open(event.submissionFormLink, '_blank', 'noopener,noreferrer');
+        return;
+      }
+      toast.info('No submission response sheet or form link provided for this event');
     } catch (error) {
-      console.error('Error fetching submissions:', error);
-      setSubmissions([]);
+      console.error('Error opening submission response link:', error);
+      toast.error('Failed to open submission response link');
     }
-  };
-
-  const getFilteredApplications = () => {
-    if (!selectedItem) return [];
-    return applications.filter(app => 
-      app.referenceId === selectedItem._id && 
-      app.type === responseType
-    );
-  };
-
-  // Export functions
-  const formatApplicationsForExport = (apps) => {
-    return apps.map(app => ({
-      'Type': app.type === 'club' ? 'Recruitment' : 'Event',
-      'Student Name': app.studentName,
-      'Email': app.email,
-      'WhatsApp No': app.whatsappNo || app.phone || '',
-      'Branch': app.branch,
-      'Year': app.year,
-      'Enrollment No': app.enrollmentNo || app.rollNumber || '',
-      'Message': app.message || '',
-      'Drive Link': app.driveLink || '',
-      'Status': app.status,
-      'Applied Date': formatDate(app.createdAt)
-    }));
-  };
-
-  const formatSubmissionsForExport = (subs) => {
-    return subs.map(sub => ({
-      'Student Name': sub.studentName,
-      'Email': sub.email,
-      'Enrollment No': sub.enrollmentNo,
-      'Year': sub.year,
-      'Branch': sub.branch,
-      'Drive Link': sub.driveLink,
-      'Submitted Date': formatDate(sub.createdAt)
-    }));
-  };
-
-  const exportToExcel = (apps, filename = 'applications') => {
-    if (apps.length === 0) {
-      toast.warning('No applications to export');
-      return;
-    }
-    
-    const exportData = formatApplicationsForExport(apps);
-    const worksheet = XLSX.utils.json_to_sheet(exportData);
-    const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, 'Applications');
-    
-    // Auto-size columns
-    const maxWidth = exportData.reduce((acc, row) => {
-      Object.keys(row).forEach((key, i) => {
-        const len = Math.max(key.length, String(row[key]).length);
-        acc[i] = Math.max(acc[i] || 10, len + 2);
-      });
-      return acc;
-    }, []);
-    worksheet['!cols'] = maxWidth.map(w => ({ wch: Math.min(w, 50) }));
-    
-    XLSX.writeFile(workbook, `${filename}_${user.club}_${new Date().toISOString().split('T')[0]}.xlsx`);
-    toast.success('Exported to Excel successfully!');
-  };
-
-  const exportSubmissionsToExcel = (subs, filename = 'submissions') => {
-    if (subs.length === 0) {
-      toast.warning('No submissions to export');
-      return;
-    }
-    
-    const exportData = formatSubmissionsForExport(subs);
-    const worksheet = XLSX.utils.json_to_sheet(exportData);
-    const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, 'Submissions');
-    
-    // Auto-size columns
-    const maxWidth = exportData.reduce((acc, row) => {
-      Object.keys(row).forEach((key, i) => {
-        const len = Math.max(key.length, String(row[key]).length);
-        acc[i] = Math.max(acc[i] || 10, len + 2);
-      });
-      return acc;
-    }, []);
-    worksheet['!cols'] = maxWidth.map(w => ({ wch: Math.min(w, 50) }));
-    
-    XLSX.writeFile(workbook, `${filename}_${user.club}_${new Date().toISOString().split('T')[0]}.xlsx`);
-    toast.success('Exported to Excel successfully!');
-  };
-
-  const exportToGoogleSheets = (apps, title = 'Applications') => {
-    if (apps.length === 0) {
-      toast.warning('No applications to export');
-      return;
-    }
-
-    const exportData = formatApplicationsForExport(apps);
-    
-    // Create CSV content for Google Sheets import
-    const headers = Object.keys(exportData[0]);
-    const csvContent = [
-      headers.join(','),
-      ...exportData.map(row => 
-        headers.map(h => {
-          let cell = String(row[h] || '');
-          // Escape quotes and wrap in quotes if contains comma or newline
-          if (cell.includes(',') || cell.includes('\n') || cell.includes('"')) {
-            cell = '"' + cell.replace(/"/g, '""') + '"';
-          }
-          return cell;
-        }).join(',')
-      )
-    ].join('\n');
-
-    // Create blob and generate download, then open Google Sheets
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = `${title}_${user.club}_${new Date().toISOString().split('T')[0]}.csv`;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
-
-    // Open Google Sheets with import instructions
-    toast.info('CSV downloaded! Open Google Sheets and use File → Import to upload', {
-      autoClose: 5000
-    });
-    
-    // Open Google Sheets in new tab
-    setTimeout(() => {
-      window.open('https://sheets.google.com/create', '_blank');
-    }, 1000);
-  };
-
-  const exportSubmissionsToGoogleSheets = (subs, title = 'Submissions') => {
-    if (subs.length === 0) {
-      toast.warning('No submissions to export');
-      return;
-    }
-
-    const exportData = formatSubmissionsForExport(subs);
-    
-    // Create CSV content for Google Sheets import
-    const headers = Object.keys(exportData[0]);
-    const csvContent = [
-      headers.join(','),
-      ...exportData.map(row => 
-        headers.map(h => {
-          let cell = String(row[h] || '');
-          // Escape quotes and wrap in quotes if contains comma or newline
-          if (cell.includes(',') || cell.includes('\n') || cell.includes('"')) {
-            cell = '"' + cell.replace(/"/g, '""') + '"';
-          }
-          return cell;
-        }).join(',')
-      )
-    ].join('\n');
-
-    // Create blob and generate download, then open Google Sheets
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = `${title}_${user.club}_${new Date().toISOString().split('T')[0]}.csv`;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
-
-    // Open Google Sheets with import instructions
-    toast.info('CSV downloaded! Open Google Sheets and use File → Import to upload', {
-      autoClose: 5000
-    });
-    
-    // Open Google Sheets in new tab
-    setTimeout(() => {
-      window.open('https://sheets.google.com/create', '_blank');
-    }, 1000);
   };
 
   // Form helpers
   const resetNoticeForm = () => {
-    setNoticeForm({ title: '', content: '', category: 'General' });
+    setNoticeForm({ title: '', content: '', category: 'General', link: '' });
     setSelectedItem(null);
   };
 
@@ -536,7 +337,8 @@ const ClubAdmin = () => {
       requirements: '',
       recruitmentDeadline: '',
       googleFormLink: '',
-      isRecruiting: true
+      isRecruiting: true,
+      responseLink: ''
     });
     setSelectedItem(null);
   };
@@ -551,6 +353,8 @@ const ClubAdmin = () => {
       submissionDeadline: '',
       registrationFormLink: '',
       submissionFormLink: '',
+      registrationResponseLink: '',
+      submissionResponseLink: '',
       prizes: '',
       rules: '',
       isActive: true
@@ -563,7 +367,8 @@ const ClubAdmin = () => {
     setNoticeForm({
       title: notice.title,
       content: notice.content,
-      category: notice.category
+      category: notice.category,
+      link: notice.link || ''
     });
     setShowNoticeModal(true);
   };
@@ -577,7 +382,8 @@ const ClubAdmin = () => {
       requirements: recruitment.requirements || '',
       recruitmentDeadline: recruitment.recruitmentDeadline?.split('T')[0] || '',
       googleFormLink: recruitment.googleFormLink || '',
-      isRecruiting: recruitment.isRecruiting
+      isRecruiting: recruitment.isRecruiting,
+      responseLink: recruitment.responseLink || ''
     });
     setShowRecruitmentModal(true);
   };
@@ -593,6 +399,8 @@ const ClubAdmin = () => {
       submissionDeadline: event.submissionDeadline?.split('T')[0] || '',
       registrationFormLink: event.registrationFormLink || '',
       submissionFormLink: event.submissionFormLink || '',
+      registrationResponseLink: event.registrationResponseLink || '',
+      submissionResponseLink: event.submissionResponseLink || '',
       prizes: event.prizes || '',
       rules: event.rules || '',
       isActive: event.isActive
@@ -646,12 +454,6 @@ const ClubAdmin = () => {
           >
             <FaCalendarAlt /> Events
           </button>
-          <button 
-            className={`tab-btn ${activeTab === 'responses' ? 'active' : ''}`}
-            onClick={() => setActiveTab('responses')}
-          >
-            <FaClipboardList /> All Responses
-          </button>
         </div>
 
         {/* Content */}
@@ -685,8 +487,12 @@ const ClubAdmin = () => {
                           <div className="item-info">
                             <span className={`category-badge cat-${notice.category?.toLowerCase()}`}>{toTitleCase(notice.category || 'general')}</span>
                             <h3>{notice.title}</h3>
-                            <p>{notice.content?.substring(0, 100)}...</p>
                             <span className="date-info"><FaClock /> {formatDate(notice.createdAt)}</span>
+                            {notice.link && (
+                              <div className="link-info">
+                                <FaExternalLinkAlt /> Link: <a href={notice.link} target="_blank" rel="noopener noreferrer">{notice.link}</a>
+                              </div>
+                            )}
                           </div>
                           <div className="item-actions">
                             <button className="action-btn edit-btn" onClick={() => openEditNotice(notice)}>
@@ -728,8 +534,17 @@ const ClubAdmin = () => {
                               {rec.isRecruiting ? 'Recruiting' : 'Closed'}
                             </span>
                             <h3>{rec.role || 'Open Position'} - {rec.name}</h3>
-                            <p>{rec.description?.substring(0, 100) || rec.requirements?.substring(0, 100)}...</p>
                             <span className="date-info"><FaClock /> Deadline: {formatDate(rec.recruitmentDeadline)}</span>
+                            {rec.googleFormLink && (
+                              <div className="link-info">
+                                <FaExternalLinkAlt /> Form: <a href={rec.googleFormLink} target="_blank" rel="noopener noreferrer">{rec.googleFormLink}</a>
+                              </div>
+                            )}
+                            {rec.responseLink && (
+                              <div className="link-info">
+                                <FaExternalLinkAlt /> Responses: <a href={rec.responseLink} target="_blank" rel="noopener noreferrer">{rec.responseLink}</a>
+                              </div>
+                            )}
                           </div>
                           <div className="item-actions">
                             <button className="action-btn view-btn" onClick={() => viewResponses(rec, 'club')}>
@@ -774,8 +589,27 @@ const ClubAdmin = () => {
                               {event.isActive ? 'Active' : 'Ended'}
                             </span>
                             <h3>{event.name}</h3>
-                            <p>{event.description?.substring(0, 100)}...</p>
                             <span className="date-info"><FaCalendarAlt /> Event: {formatDate(event.eventDate)}</span>
+                            {event.registrationFormLink && (
+                              <div className="link-info">
+                                <FaExternalLinkAlt /> Registration Form: <a href={event.registrationFormLink} target="_blank" rel="noopener noreferrer">{event.registrationFormLink}</a>
+                              </div>
+                            )}
+                            {event.registrationResponseLink && (
+                              <div className="link-info">
+                                <FaExternalLinkAlt /> Registration Responses: <a href={event.registrationResponseLink} target="_blank" rel="noopener noreferrer">{event.registrationResponseLink}</a>
+                              </div>
+                            )}
+                            {event.submissionFormLink && (
+                              <div className="link-info">
+                                <FaExternalLinkAlt /> Submission Form: <a href={event.submissionFormLink} target="_blank" rel="noopener noreferrer">{event.submissionFormLink}</a>
+                              </div>
+                            )}
+                            {event.submissionResponseLink && (
+                              <div className="link-info">
+                                <FaExternalLinkAlt /> Submission Responses: <a href={event.submissionResponseLink} target="_blank" rel="noopener noreferrer">{event.submissionResponseLink}</a>
+                              </div>
+                            )}
                           </div>
                           <div className="item-actions">
                             <button className="action-btn view-btn" onClick={() => viewResponses(event, 'event')}>
@@ -793,70 +627,6 @@ const ClubAdmin = () => {
                           </div>
                         </div>
                       ))}
-                    </div>
-                  )}
-                </div>
-              )}
-
-              {/* All Responses Tab */}
-              {activeTab === 'responses' && (
-                <div className="tab-content">
-                  <div className="content-header">
-                    <h2>All Applications</h2>
-                    <div className="export-buttons">
-                      <button 
-                        className="btn btn-export excel"
-                        onClick={() => exportToExcel(applications, 'all_applications')}
-                        disabled={applications.length === 0}
-                      >
-                        <FaFileExcel /> Export Excel
-                      </button>
-                      <button 
-                        className="btn btn-export sheets"
-                        onClick={() => exportToGoogleSheets(applications, 'all_applications')}
-                        disabled={applications.length === 0}
-                      >
-                        <FaGoogle /> Export to Sheets
-                      </button>
-                    </div>
-                  </div>
-                  
-                  {applications.length === 0 ? (
-                    <div className="empty-state">
-                      <FaClipboardList className="empty-icon" />
-                      <h3>No Applications</h3>
-                      <p>No applications have been submitted yet</p>
-                    </div>
-                  ) : (
-                    <div className="responses-table-container">
-                      <table className="responses-table">
-                        <thead>
-                          <tr>
-                            <th>Type</th>
-                            <th>Student Name</th>
-                            <th>Email</th>
-                            <th>WhatsApp</th>
-                            <th>Branch</th>
-                            <th>Year</th>
-                            <th>Enrollment No</th>
-                            <th>Date</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {applications.map(app => (
-                            <tr key={app._id}>
-                              <td><span className={`type-badge ${app.type}`}>{app.type}</span></td>
-                              <td>{app.studentName}</td>
-                              <td>{app.email}</td>
-                              <td>{app.whatsappNo || app.phone || '-'}</td>
-                              <td>{app.branch}</td>
-                              <td>{app.year}</td>
-                              <td>{app.enrollmentNo || app.rollNumber || '-'}</td>
-                              <td>{formatDate(app.createdAt)}</td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
                     </div>
                   )}
                 </div>
@@ -907,6 +677,15 @@ const ClubAdmin = () => {
                   placeholder="Notice content..."
                   rows={5}
                   required
+                />
+              </div>
+              <div className="form-group">
+                <label>Link (Optional)</label>
+                <input
+                  type="url"
+                  value={noticeForm.link}
+                  onChange={(e) => setNoticeForm({ ...noticeForm, link: e.target.value })}
+                  placeholder="https://example.com/..."
                 />
               </div>
               <div className="modal-actions">
@@ -969,6 +748,15 @@ const ClubAdmin = () => {
                   value={recruitmentForm.googleFormLink}
                   onChange={(e) => setRecruitmentForm({ ...recruitmentForm, googleFormLink: e.target.value })}
                   placeholder="https://forms.gle/..."
+                />
+              </div>
+              <div className="form-group">
+                <label>Response Link (Google Sheets for responses)</label>
+                <input
+                  type="url"
+                  value={recruitmentForm.responseLink}
+                  onChange={(e) => setRecruitmentForm({ ...recruitmentForm, responseLink: e.target.value })}
+                  placeholder="https://docs.google.com/spreadsheets/... (response sheet)"
                 />
               </div>
               <div className="form-row">
@@ -1113,6 +901,26 @@ const ClubAdmin = () => {
                   />
                 </div>
               </div>
+              <div className="form-row">
+                <div className="form-group">
+                  <label>Registration Response Link</label>
+                  <input
+                    type="url"
+                    value={eventForm.registrationResponseLink}
+                    onChange={(e) => setEventForm({ ...eventForm, registrationResponseLink: e.target.value })}
+                    placeholder="https://docs.google.com/spreadsheets/... (registration responses)"
+                  />
+                </div>
+                <div className="form-group">
+                  <label>Submission Response Link</label>
+                  <input
+                    type="url"
+                    value={eventForm.submissionResponseLink}
+                    onChange={(e) => setEventForm({ ...eventForm, submissionResponseLink: e.target.value })}
+                    placeholder="https://docs.google.com/spreadsheets/... (submission responses)"
+                  />
+                </div>
+              </div>
               <div className="form-group">
                 <label>Status</label>
                 <select
@@ -1136,157 +944,7 @@ const ClubAdmin = () => {
         </div>
       )}
 
-      {/* Responses Modal */}
-      {showResponsesModal && selectedItem && (
-        <div className="modal-overlay" onClick={() => setShowResponsesModal(false)}>
-          <div className={`admin-modal large-modal light-modal`} onClick={(e) => e.stopPropagation()}>
-            <div className="modal-header">
-              <h2><FaClipboardList /> Responses for {selectedItem.name}</h2>
-              <button className="modal-close" onClick={() => setShowResponsesModal(false)}>
-                <FaTimes />
-              </button>
-            </div>
-            <div className="modal-body">
-              <div className="responses-header">
-                <span className="responses-count">{getFilteredApplications().length} responses</span>
-                <div className="export-buttons">
-                  <button 
-                    className="btn btn-export excel"
-                    onClick={() => exportToExcel(getFilteredApplications(), selectedItem.name?.replace(/\s+/g, '_'))}
-                    disabled={getFilteredApplications().length === 0}
-                  >
-                    <FaFileExcel /> Export Excel
-                  </button>
-                  <button 
-                    className="btn btn-export sheets"
-                    onClick={() => exportToGoogleSheets(getFilteredApplications(), selectedItem.name?.replace(/\s+/g, '_'))}
-                    disabled={getFilteredApplications().length === 0}
-                  >
-                    <FaGoogle /> Export to Sheets
-                  </button>
-                </div>
-              </div>
-              {getFilteredApplications().length === 0 ? (
-                <div className="empty-state">
-                  <p>No responses yet</p>
-                </div>
-              ) : (
-                <div className="responses-table-container">
-                  <table className="responses-table">
-                    <thead>
-                      <tr>
-                        <th>Name</th>
-                        <th>Email</th>
-                        <th>WhatsApp</th>
-                        <th>Branch</th>
-                        <th>Year</th>
-                        <th>Enrollment No</th>
-                        <th>Message</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {getFilteredApplications().map(app => (
-                        <tr key={app._id}>
-                          <td>{app.studentName}</td>
-                          <td>{app.email}</td>
-                          <td>{app.whatsappNo || app.phone || '-'}</td>
-                          <td>{app.branch}</td>
-                          <td>{app.year}</td>
-                          <td>{app.enrollmentNo || app.rollNumber || '-'}</td>
-                          <td>{app.message || '-'}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              )}
-            </div>
-            <div className="modal-actions">
-              <button className="btn btn-secondary" onClick={() => setShowResponsesModal(false)}>
-                Close
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Submissions Modal */}
-      {showSubmissionsModal && selectedItem && (
-        <div className="modal-overlay" onClick={() => setShowSubmissionsModal(false)}>
-          <div className={`admin-modal large-modal light-modal`} onClick={(e) => e.stopPropagation()}>
-            <div className="modal-header">
-              <h2><FaClipboardList /> Submissions for {selectedItem.name}</h2>
-              <button className="modal-close" onClick={() => setShowSubmissionsModal(false)}>
-                <FaTimes />
-              </button>
-            </div>
-            <div className="modal-body">
-              <div className="responses-header">
-                <span className="responses-count">{submissions.length} submissions</span>
-                <div className="export-buttons">
-                  <button 
-                    className="btn btn-export excel"
-                    onClick={() => exportSubmissionsToExcel(submissions, selectedItem.name?.replace(/\s+/g, '_'))}
-                    disabled={submissions.length === 0}
-                  >
-                    <FaFileExcel /> Export Excel
-                  </button>
-                  <button 
-                    className="btn btn-export sheets"
-                    onClick={() => exportSubmissionsToGoogleSheets(submissions, selectedItem.name?.replace(/\s+/g, '_'))}
-                    disabled={submissions.length === 0}
-                  >
-                    <FaGoogle /> Export to Sheets
-                  </button>
-                </div>
-              </div>
-              {submissions.length === 0 ? (
-                <div className="empty-state">
-                  <p>No submissions yet</p>
-                </div>
-              ) : (
-                <div className="responses-table-container">
-                  <table className="responses-table">
-                    <thead>
-                      <tr>
-                        <th>Name</th>
-                        <th>Email</th>
-                        <th>Enrollment No</th>
-                        <th>Year</th>
-                        <th>Branch</th>
-                        <th>Drive Link</th>
-                        <th>Submitted Date</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {submissions.map(sub => (
-                        <tr key={sub._id}>
-                          <td>{sub.studentName}</td>
-                          <td>{sub.email}</td>
-                          <td>{sub.enrollmentNo}</td>
-                          <td>{sub.year}</td>
-                          <td>{sub.branch}</td>
-                          <td>
-                            <a href={sub.driveLink} target="_blank" rel="noopener noreferrer" className="drive-link">
-                              View Link
-                            </a>
-                          </td>
-                          <td>{formatDate(sub.createdAt)}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              )}
-            </div>
-            <div className="modal-actions">
-              <button className="btn btn-secondary" onClick={() => setShowSubmissionsModal(false)}>
-                Close
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* Responses and Submissions are now opened via external response sheet links */}
     </div>
   );
 };

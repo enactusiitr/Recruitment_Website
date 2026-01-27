@@ -43,6 +43,11 @@ const clubSchema = new mongoose.Schema({
     type: String,
     default: ''
   }
+  ,
+  responseLink: {
+    type: String,
+    default: ''
+  }
 }, {
   timestamps: true
 });
